@@ -1,10 +1,8 @@
 #!/bin/bash
-
 REPO_URL="https://github.com/Samwaswa69/Assignment-done.git"
 APP_DIR="/opt/assignment-site"
 IMAGE_NAME="assignment-site"
 CONTAINER_NAME="assignment-container"
-
 # Clone or pull latest code
 if [ -d "$APP_DIR/.git" ]; then
     echo "[+] Pulling latest code from GitHub..."
