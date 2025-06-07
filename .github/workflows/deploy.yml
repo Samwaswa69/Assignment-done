@@ -22,7 +22,7 @@ jobs:
         run: |
           ssh-keyscan -H 207.180.211.224 >> ~/.ssh/known_hosts
 
-      - name: Upload update.sh and run remotely
+      - name: Update project code.
         run: |
           scp deploy_free_ssl.sh root@207.180.211.224:~/deploy_free_ssl.sh
           ssh root@207.180.211.224 'chmod +x ~/deploy_free_ssl.sh && ~/deploy_free_ssl.sh'
