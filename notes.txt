@@ -1,0 +1,80 @@
+https://digimarcon.com/speakers-bureau/
+sshpass -p "Ratchateandclank2" scp /Users/mike/Desktop/nextjs/nafasi3/deploy.sh root@207.180.211.224:./deploy.sh
+sshpass -p "Ratchateandclank2" scp /Users/mike/Desktop/nextjs/nafasi3/deploy_ssl.sh root@207.180.211.224:./deploy_ssl.sh
+sshpass -p "Ratchateandclank2" scp /Users/mike/Desktop/nextjs/nafasi3/deploy_free_ssl.sh root@207.180.211.224:./deploy_free_ssl.sh
+
+sshpass -p "Ratchateandclank2" scp /Users/mike/Desktop/nextjs/Assignment-done/deploy_free_ssl.sh root@207.180.211.224:./deploy_free_ssl.sh
+
+sshpass -p "Ratchateandclank2" scp /Users/mike/Desktop/nextjs/nafasi3/update.sh root@207.180.211.224:./update.sh
+
+sshpass -p "Ratchateandclank2" scp /Users/mike/Desktop/nextjs/nafasi3/cert.pem root@207.180.211.224:/etc/nginx/ssl/cert.pem
+sshpass -p "Ratchateandclank2" scp /Users/mike/Desktop/nextjs/nafasi3/private_key.key root@207.180.211.224:/etc/nginx/ssl/private_key.key
+
+sshpass -p "hilarious1996" scp /Users/mike/Desktop/nextjs/nafasi3/cert.pem root@207.180.211.224:/etc/nginx/ssl/cert.pem
+sshpass -p "hilarious1996" scp /Users/mike/Desktop/nextjs/nafasi3/private_key.key root@207.180.211.224:/etc/nginx/ssl/private_key.key
+
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+cat /root/.ssh/id_rsa
+
+docker exec -it b2fdd1ae624f /bin/bash
+docker exec -it api-api-1  pwd
+
+chmod +x ~/deploy_ssl.sh && ~/deploy_ssl.sh
+chmod +x ~/deploy_free_ssl.sh && ~/deploy_free_ssl.sh
+
+207.180.211.224
+Ratchateandclank2
+
+Changes.
+******************************
+company dropdown like source site with their options.
+Footer slider pending.
+on sponsorship page using grid to display gallery
+teams missing
+
+<Image
+            src={images[currentIndex].src}
+            alt="NASAFI_LOGO"
+            quality={100}
+            fill
+            sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 33vw"
+            objectFit="cover"
+            className={""}
+          />
+
+
+REPO_URL="git@github.com:omodingmike/nafasi.git"
+
+sshpass -p "Ratchateandclank2" scp /Users/mike/Desktop/nextjs/nafasi3/deploy.sh root@207.180.211.224:./deploy.sh
+sshpass -p "Ratchateandclank2" scp /Users/mike/Desktop/nextjs/nafasi3/update.sh root@207.180.211.224:./update.sh
+
+Website content
+http://localhost:3000/forum
+page 1 of the document upto becomes the blueprint for emerging markets worldwide.
+
+http://localhost:3000/training
+form DIGITAL MARKETING TRAINING 2024 to
+Quote from a Participant:
+“This training didn’t just teach me marketing-it showed me how to use digital tools to solve real
+problems in my community.”
+Beris Martin, 3rd-Year ICT Student, Makerere University.
+
+http://localhost:3000/about
+from NAFASI TECH AFRIQUE CO LTD to
+Policy Shaping:
+frameworks.
+Collaborates with East African governments to draft digital trade regulations and cybersecurity
+
+All the rest.
+http://localhost:3000/team
+NAFASI TECH AFRIQUE CO LTD: MEET THE VISIONARY TEAM DRIVING AFRICA’S
+DIGITAL REVOLUTION
+
+phone numbers
+bureue upto participating the rest leave
+company overview
+
+sudo certbot --nginx -d nafasiafrique.tech -d www.nafasiafrique.tech
+
+register@nafasiafrique.tech
+Asoaj3y&

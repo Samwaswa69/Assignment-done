@@ -1,0 +1,13 @@
+services:
+  web:
+    build: .
+    environment:
+      - NODE_ENV=production
+
+    networks:
+      - my_network
+
+networks:
+  my_network:
+    name: my_network
+    driver: bridge
