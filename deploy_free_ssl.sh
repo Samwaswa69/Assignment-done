@@ -1,128 +1,116 @@
 #!/bin/bash
 
-# Env Vars
-EMAIL="andymasa2animate@gmail.com" # not used now, kept for future domain use
+# --- Configuration ---
+VPS_IP="207.180.211.224"
+IMAGE_NAME="my-static-site"
+CONTAINER_NAME="my-nginx-site"
+GIT_REPO_URL="git@github.com:Samwaswa69/Assignment-done.git"
+# Directory where the Git repository will be cloned
+CLONE_DIR="Assignment-done_repo" # Name of the cloned directory
 
-# Script Vars
-REPO_URL="git@github.com:Samwaswa69/Assignment-done.git"
-APP_DIR=~/myapp
-SWAP_SIZE="1G"
-SSL_DIR="/etc/ssl/myapp"
-
-# Update package list and upgrade existing packages
-sudo apt update && sudo apt upgrade -y
-
-# Add Swap Space
-echo "Adding swap space..."
-sudo fallocate -l $SWAP_SIZE /swapfile
-sudo chmod 600 /swapfile
-sudo mkswap /swapfile
-sudo swapon /swapfile
-echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
-
-# Install Docker
-sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" -y
-sudo apt update
-sudo apt install -y docker-ce
-
-# Install Docker Compose
-sudo rm -f /usr/local/bin/docker-compose
-sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
-sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
-
-# Verify Docker Compose installation
-docker-compose --version
-if [ $? -ne 0 ]; then
-  echo "Docker Compose installation failed. Exiting."
-  exit 1
+# --- Pre-checks ---
+if ! command -v docker &> /dev/null
+then
+    echo "Error: Docker is not installed. Please install Docker first: https://docs.docker.com/get-docker/"
+    exit 1
 fi
 
-# Ensure Docker starts on boot and start Docker service
-sudo systemctl enable docker
-sudo systemctl start docker
+if ! command -v openssl &> /dev/null
+then
+    echo "Error: OpenSSL is not installed. Please install OpenSSL."
+    exit 1
+fi
 
-# Clone or update the repo
-if [ -d "$APP_DIR" ]; then
-  echo "Directory $APP_DIR exists. Pulling latest changes..."
-  cd $APP_DIR && git pull
+if ! command -v git &> /dev/null
+then
+    echo "Error: Git is not installed. Please install Git."
+    exit 1
+fi
+
+# --- Step 1: Clone or Update Git Repository ---
+echo "--- Cloning/Updating Git repository: $GIT_REPO_URL ---"
+if [ -d "$CLONE_DIR" ]; then
+    echo "Repository directory '$CLONE_DIR' already exists. Pulling latest changes..."
+    cd "$CLONE_DIR" || { echo "Error: Could not change directory to '$CLONE_DIR'."; exit 1; }
+    git pull || { echo "Error: Git pull failed."; exit 1; }
+    cd .. # Go back to the parent directory
 else
-  echo "Cloning repo..."
-  git clone $REPO_URL $APP_DIR
-  cd $APP_DIR
+    git clone "$GIT_REPO_URL" "$CLONE_DIR" || { echo "Error: Git clone failed. Check SSH key setup or repository URL."; exit 1; }
+fi
+echo "Repository '$CLONE_DIR' is up to date."
+echo ""
+
+# --- Navigate into the cloned directory for subsequent operations ---
+cd "$CLONE_DIR" || { echo "Error: Could not navigate into cloned repository '$CLONE_DIR'."; exit 1; }
+
+# --- Step 2: Generate Self-Signed SSL Certificate ---
+# Assuming 'certs/' directory and your static files ('html/', 'nginx.conf', 'Dockerfile') are inside the cloned repo
+CERT_DIR="certs"
+echo "--- Generating self-signed SSL certificate ---"
+mkdir -p "$CERT_DIR"
+
+# Check if certificates already exist to avoid re-generating unnecessarily
+if [ ! -f "$CERT_DIR/selfsigned.key" ] || [ ! -f "$CERT_DIR/selfsigned.crt" ]; then
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+        -keyout "$CERT_DIR/selfsigned.key" \
+        -out "$CERT_DIR/selfsigned.crt" \
+        -subj "/CN=$VPS_IP"
+    echo "SSL certificate and key generated in '$CERT_DIR/' inside the cloned repo."
+else
+    echo "SSL certificate and key already exist in '$CERT_DIR/'. Skipping generation."
+fi
+echo ""
+
+# --- Step 3: Build the Docker Image ---
+echo "--- Building Docker image: $IMAGE_NAME ---"
+# Build from the context of the cloned repository
+docker build -t "$IMAGE_NAME" .
+
+if [ $? -ne 0 ]; then
+    echo "Error: Docker image build failed. Exiting."
+    # Exit from the cloned directory to avoid permission issues later if the script is run again.
+    cd ..
+    exit 1
+fi
+echo "Docker image '$IMAGE_NAME' built successfully."
+echo ""
+
+# --- Step 4: Stop and Remove Existing Container (if any) ---
+echo "--- Stopping and removing existing container (if any): $CONTAINER_NAME ---"
+# Go back to the original directory before checking/managing containers
+cd ..
+if docker ps -a --format '{{.Names}}' | grep -q "$CONTAINER_NAME"; then
+    docker stop "$CONTAINER_NAME"
+    docker rm "$CONTAINER_NAME"
+    echo "Existing container '$CONTAINER_NAME' stopped and removed."
+else
+    echo "No existing container '$CONTAINER_NAME' found."
+fi
+echo ""
+
+# --- Step 5: Run the Docker Container ---
+echo "--- Running Docker container: $CONTAINER_NAME ---"
+docker run -d \
+    --name "$CONTAINER_NAME" \
+    -p 80:80 \
+    -p 443:443 \
+    "$IMAGE_NAME"
+
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to run Docker container. Check logs for details."
+    exit 1
 fi
 
-# Generate a self-signed SSL certificate
-echo "Generating self-signed SSL certificate..."
-sudo mkdir -p $SSL_DIR
-sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout $SSL_DIR/selfsigned.key \
-  -out $SSL_DIR/selfsigned.crt \
-  -subj "/C=US/ST=VPS/L=Anywhere/O=SelfSigned/CN=$(hostname -I | awk '{print $1}')"
+echo "Docker container '$CONTAINER_NAME' is running!"
+echo "You should now be able to access your site at: https://$VPS_IP"
+echo "Remember to accept the self-signed certificate warning in your browser."
+echo ""
 
-# Copy certs into app directory for Docker to use
-sudo mkdir -p $APP_DIR/certs
-sudo cp $SSL_DIR/selfsigned.* $APP_DIR/certs
+# --- Optional: Show running containers ---
+echo "--- Current running Docker containers ---"
+docker ps
 
-# Create Dockerfile
-cat > $APP_DIR/Dockerfile <<'EOF'
-FROM nginx:alpine
-RUN rm -rf /usr/share/nginx/html/*
-COPY . /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/nginx.conf
-EXPOSE 443
-EOF
-
-# Create Nginx config
-cat > $APP_DIR/nginx.conf <<'EOF'
-worker_processes 1;
-events { worker_connections 1024; }
-http {
-    include       mime.types;
-    default_type  application/octet-stream;
-    sendfile        on;
-
-    server {
-        listen 443 ssl;
-        server_name _;
-
-        ssl_certificate     /etc/ssl/myapp/selfsigned.crt;
-        ssl_certificate_key /etc/ssl/myapp/selfsigned.key;
-
-        location / {
-            root   /usr/share/nginx/html;
-            index  index.html;
-        }
-    }
-}
-EOF
-
-# Create Docker Compose file
-cat > $APP_DIR/docker-compose.yml <<'EOF'
-version: '3.8'
-services:
-  web:
-    build: .
-    ports:
-      - "443:443"
-    volumes:
-      - ./certs:/etc/ssl/myapp:ro
-EOF
-
-# Build and run containers
-cd $APP_DIR
-sudo docker-compose up --build -d
-
-# Final check
-if ! sudo docker-compose ps | grep "Up"; then
-  echo "Docker containers failed to start. Check logs with 'docker-compose logs'."
-  exit 1
-fi
-
-# Output access info
-IP_ADDRESS=$(hostname -I | awk '{print $1}')
-echo "Deployment complete!"
-echo "Visit your site at: https://$IP_ADDRESS"
-echo "Note: Browser will warn about self-signed certificate."
+# --- Cleanup (Optional) ---
+# If you want to remove the cloned repository after deployment, uncomment the lines below.
+# rm -rf "$CLONE_DIR"
+# echo "Cleaned up cloned repository directory '$CLONE_DIR'."

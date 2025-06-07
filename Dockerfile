@@ -1,14 +1,9 @@
-# Use official Nginx image
 FROM nginx:alpine
-
-# Remove default static files
-RUN rm -rf /usr/share/nginx/html/*
-
-# Copy your site into the Nginx html directory
-COPY . /usr/share/nginx/html
-
-# Copy custom Nginx config (we'll define it in step 2)
+RUN rm /etc/nginx/conf.d/default.conf
 COPY nginx.conf /etc/nginx/nginx.conf
-
-# Expose HTTPS port
+COPY certs/selfsigned.crt /etc/nginx/certs/selfsigned.crt
+COPY certs/selfsigned.key /etc/nginx/certs/selfsigned.key
+COPY html/ /usr/share/nginx/html
+EXPOSE 80
 EXPOSE 443
+CMD ["nginx", "-g", "daemon off;"]
