@@ -1,15 +1,14 @@
-FROM oven/bun:alpine AS base
+# Use official Nginx image
+FROM nginx:alpine
 
-# Stage 1: Install dependencies
-FROM base AS deps
-WORKDIR /app
+# Remove default static files
+RUN rm -rf /usr/share/nginx/html/*
 
-# Stage 2: Build the application
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+# Copy your site into the Nginx html directory
+COPY . /usr/share/nginx/html
 
-# Stage 3: Production server
-FROM base AS runner
-WORKDIR /app
+# Copy custom Nginx config (we'll define it in step 2)
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Expose HTTPS port
+EXPOSE 443

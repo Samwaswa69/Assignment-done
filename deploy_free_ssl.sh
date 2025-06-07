@@ -6,7 +6,7 @@ EMAIL="andymasa2animate@gmail.com" # not used now, kept for future domain use
 # Script Vars
 REPO_URL="git@github.com:Samwaswa69/Assignment-done.git"
 APP_DIR=~/myapp
-SWAP_SIZE="1G"  # Swap size of 1GB
+SWAP_SIZE="1G"
 SSL_DIR="/etc/ssl/myapp"
 
 # Update package list and upgrade existing packages
@@ -18,27 +18,18 @@ sudo fallocate -l $SWAP_SIZE /swapfile
 sudo chmod 600 /swapfile
 sudo mkswap /swapfile
 sudo swapon /swapfile
-
-# Make swap permanent
 echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 
 # Install Docker
-sudo apt install apt-transport-https ca-certificates curl software-properties-common -y
+sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" -y
 sudo apt update
-sudo apt install docker-ce -y
+sudo apt install -y docker-ce
 
 # Install Docker Compose
 sudo rm -f /usr/local/bin/docker-compose
 sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-
-# Wait for the file to be fully downloaded before proceeding
-if [ ! -f /usr/local/bin/docker-compose ]; then
-  echo "Docker Compose download failed. Exiting."
-  exit 1
-fi
-
 sudo chmod +x /usr/local/bin/docker-compose
 sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
 
@@ -53,22 +44,15 @@ fi
 sudo systemctl enable docker
 sudo systemctl start docker
 
-# Clone the Git repository
+# Clone or update the repo
 if [ -d "$APP_DIR" ]; then
-  echo "Directory $APP_DIR already exists. Pulling latest changes..."
+  echo "Directory $APP_DIR exists. Pulling latest changes..."
   cd $APP_DIR && git pull
 else
-  echo "Cloning repository from $REPO_URL..."
+  echo "Cloning repo..."
   git clone $REPO_URL $APP_DIR
   cd $APP_DIR
 fi
-
-# Install Nginx
-sudo apt install nginx -y
-
-# Remove old Nginx config
-sudo rm -f /etc/nginx/sites-available/myapp
-sudo rm -f /etc/nginx/sites-enabled/myapp
 
 # Generate a self-signed SSL certificate
 echo "Generating self-signed SSL certificate..."
@@ -78,45 +62,56 @@ sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -out $SSL_DIR/selfsigned.crt \
   -subj "/C=US/ST=VPS/L=Anywhere/O=SelfSigned/CN=$(hostname -I | awk '{print $1}')"
 
-# Create Nginx config with reverse proxy and SSL
-sudo cat > /etc/nginx/sites-available/myapp <<EOL
-limit_req_zone \$binary_remote_addr zone=mylimit:10m rate=10r/s;
+# Copy certs into app directory for Docker to use
+sudo mkdir -p $APP_DIR/certs
+sudo cp $SSL_DIR/selfsigned.* $APP_DIR/certs
 
-server {
-    listen 80;
-    server_name _;
+# Create Dockerfile
+cat > $APP_DIR/Dockerfile <<'EOF'
+FROM nginx:alpine
+RUN rm -rf /usr/share/nginx/html/*
+COPY . /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/nginx.conf
+EXPOSE 443
+EOF
 
-    return 301 https://\$host\$request_uri;
-}
+# Create Nginx config
+cat > $APP_DIR/nginx.conf <<'EOF'
+worker_processes 1;
+events { worker_connections 1024; }
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile        on;
 
-server {
-    listen 443 ssl;
-    server_name _;
+    server {
+        listen 443 ssl;
+        server_name _;
 
-    ssl_certificate $SSL_DIR/selfsigned.crt;
-    ssl_certificate_key $SSL_DIR/selfsigned.key;
+        ssl_certificate     /etc/ssl/myapp/selfsigned.crt;
+        ssl_certificate_key /etc/ssl/myapp/selfsigned.key;
 
-    limit_req zone=mylimit burst=20 nodelay;
-
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-        proxy_cache_bypass \$http_upgrade;
-
-        proxy_buffering off;
-        proxy_set_header X-Accel-Buffering no;
+        location / {
+            root   /usr/share/nginx/html;
+            index  index.html;
+        }
     }
 }
-EOL
+EOF
 
-# Enable the new Nginx config
-sudo ln -s /etc/nginx/sites-available/myapp /etc/nginx/sites-enabled/myapp
-sudo nginx -t && sudo systemctl restart nginx
+# Create Docker Compose file
+cat > $APP_DIR/docker-compose.yml <<'EOF'
+version: '3.8'
+services:
+  web:
+    build: .
+    ports:
+      - "443:443"
+    volumes:
+      - ./certs:/etc/ssl/myapp:ro
+EOF
 
-# Start Docker containers
+# Build and run containers
 cd $APP_DIR
 sudo docker-compose up --build -d
 
@@ -128,5 +123,6 @@ fi
 
 # Output access info
 IP_ADDRESS=$(hostname -I | awk '{print $1}')
-echo "Deployment complete. You can now access your app at: https://$IP_ADDRESS"
-echo "Note: Your browser will warn about the self-signed SSL certificate."
+echo "Deployment complete!"
+echo "Visit your site at: https://$IP_ADDRESS"
+echo "Note: Browser will warn about self-signed certificate."

@@ -1,13 +1,9 @@
+version: '3.8'
+
 services:
   web:
     build: .
-    environment:
-      - NODE_ENV=production
-
-    networks:
-      - my_network
-
-networks:
-  my_network:
-    name: my_network
-    driver: bridge
+    ports:
+      - "443:443"
+    volumes:
+      - ./certs:/etc/ssl/myapp:ro
