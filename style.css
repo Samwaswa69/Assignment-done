@@ -1,9 +1,12 @@
-/* header*/
+body{
+    background-image: url(./pic/yue-ma-Dw46btG90Xg-unsplash.jpg);
+}
+/* header*/\
 .nav{
    padding: 20px; 
    display: flex;
    justify-content: space-between;
-   background-color: #1F2937;
+   
    
 }
 .menu{
@@ -11,6 +14,10 @@
     padding: 0px;
     flex: 2;
     transform: translateX(20%);
+    font-size:23px;
+}
+.hh{
+    font-family: fantasy;
 }
 .item{
     flex:2;
@@ -20,7 +27,7 @@
     display: flex;
     padding: 0px;
     justify-content: space-between;
-    background-color: #1F2937;
+
 }
 .b1{
     padding:10px;
@@ -32,7 +39,7 @@
 }
 .firstbody{
     display: flex;
-    background-color: aliceblue;
+    
     margin: 0px;
     height: 70px;
     
@@ -42,9 +49,12 @@
     font-weight: 10px;
     font-size: 25px;
 }
+.pho{
+    transform: translateX(-60%);
+}
 /*second body*/
 .secbody{
-   background-color: aliceblue; 
+   
    height: 180px;
    display: flex;
    justify-content: space-around;
