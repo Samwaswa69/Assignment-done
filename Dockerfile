@@ -1,9 +1,14 @@
 FROM nginx:alpine
-RUN rm /etc/nginx/conf.d/default.conf
-COPY nginx.conf /etc/nginx/nginx.conf
-COPY certs/selfsigned.crt /etc/nginx/certs/selfsigned.crt
-COPY certs/selfsigned.key /etc/nginx/certs/selfsigned.key
-COPY html/ /usr/share/nginx/html
+
+# Install git
+RUN apk add --no-cache git
+
+# Clone the GitHub repo into the web root
+RUN git clone https://github.com/Samwaswa69/Assignment-done.git /usr/share/nginx/html
+
+# Clean up .git directory (optional)
+RUN rm -rf /usr/share/nginx/html/.git
+
+# Expose port 80 and start Nginx
 EXPOSE 80
-EXPOSE 443
 CMD ["nginx", "-g", "daemon off;"]
