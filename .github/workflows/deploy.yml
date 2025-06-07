@@ -24,5 +24,5 @@ jobs:
 
       - name: Update project code.
         run: |
-          scp deploy_free_ssl.sh root@207.180.211.224:~/deploy_free_ssl.sh
-          ssh root@207.180.211.224 'chmod +x ~/deploy_free_ssl.sh && ~/deploy_free_ssl.sh'
+          scp deploy.sh root@207.180.211.224:~/deploy.sh
+          ssh root@207.180.211.224 'chmod +x ~/deploy.sh && ~/deploy.sh'
