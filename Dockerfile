@@ -3,12 +3,14 @@ FROM nginx:alpine
 # Install git
 RUN apk add --no-cache git
 
-# Clone the GitHub repo into the web root
+# Remove default Nginx content
+RUN rm -rf /usr/share/nginx/html/*
+
+# Clone the repo AFTER deletion
 RUN git clone https://github.com/Samwaswa69/Assignment-done.git /usr/share/nginx/html
 
-# Clean up .git directory (optional)
-RUN rm -rf /usr/share/nginx/html/.git
+# Optional: Use your custom nginx.conf
+# COPY /usr/share/nginx/html/nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose port 80 and start Nginx
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
